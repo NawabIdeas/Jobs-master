@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - JobsCare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #d4a5ff, #b3e5fc);
+            color: #333;
+        }
+        .header {
+            background: #4b0082;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .header h3 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .admin-form, .category-form {
+            margin: 80px 20px 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        .admin-form label, .category-form label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: 600;
+            color: #4b0082;
+        }
+        .admin-form input, .admin-form textarea, .admin-form select,
+        .category-form input, .category-form select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .admin-form button, .category-form button {
+            background: #4b0082;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .admin-form button:hover, .category-form button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .job-list {
+            margin: 20px;
+        }
+        .job-item {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .job-item:hover {
+            transform: translateY(-5px);
+        }
+        .job-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+        }
+        .job-item button {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .job-item button.edit {
+            background: #2563eb;
+            margin-right: 10px;
+        }
+        .category-list {
+            margin: 20px;
+        }
+        .category-item {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            transition: transform 0.3s ease;
+        }
+        .category-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+        .category-item:hover {
+            transform: translateY(-5px);
+        }
+        .category-item button {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .category-item button.edit {
+            background: #2563eb;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>Admin- Job Master</h3>
+    </div>
+
+    <div class="category-form">
+        <h2>Manage Categories</h2>
+        <form id="categoryForm">
+            <label for="newCategory">Category Name</label>
+            <input type="text" id="newCategory" placeholder="e.g., Masjid" required>
+            <label for="categoryColor">Category Text Color</label>
+            <input type="color" id="categoryColor" value="#1e3a8a">
+            <button type="submit">Add Category</button>
+        </form>
+        <div class="category-list" id="categoryList"></div>
+    </div>
+
+    <div class="admin-form">
+        <h2>Add/Edit Job</h2>
+        <form id="jobForm">
+            <label for="category">Category</label>
+            <select id="category" required></select>
+            <label for="title">Job Title</label>
+            <input type="text" id="title" required>
+            <label for="content">Job Description</label>
+            <textarea id="content" rows="5" placeholder="Paste or type job description here" required></textarea>
+            <label for="thumbnail">Thumbnail Image</label>
+            <input type="file" id="thumbnail" accept="image/*">
+            <label for="applyUrl">Apply URL</label>
+            <input type="text" id="applyUrl" placeholder="Optional">
+            <label for="applyText">Apply Button Text</label>
+            <input type="text" id="applyText" placeholder="e.g., Apply Now">
+            <input type="hidden" id="editIndex">
+            <input type="hidden" id="editCategory">
+            <button type="submit">Save Job</button>
+        </form>
+    </div>
+
+    <div class="job-list" id="jobList"></div>
+
+    <script>
+        let jobs = JSON.parse(localStorage.getItem('jobs')) || {};
+        let categories = JSON.parse(localStorage.getItem('categories')) || [
+            { id: 'recent-jobs', name: 'Recent Jobs', color: '#1e3a8a' },
+            { id: 'pak-army', name: 'Pak Army', color: '#1e3a8a' },
+            { id: 'pak-fc', name: 'Pak FC', color: '#1e3a8a' },
+            { id: 'local-jobs', name: 'Local Jobs', color: '#1e3a8a' },
+            { id: 'govt-jobs', name: 'Government Jobs', color: '#1e3a8a' }
+        ];
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function renderCategories() {
+            const categorySelect = document.getElementById('category');
+            const categoryList = document.getElementById('categoryList');
+            categorySelect.innerHTML = '';
+            categoryList.innerHTML = '';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+
+                const categoryItem = document.createElement('div');
+                categoryItem.classList.add('category-item');
+                categoryItem.setAttribute('draggable', 'true');
+                categoryItem.setAttribute('data-id', category.id);
+                categoryItem.innerHTML = `
+                    <div>
+                        <h3 style="color: ${category.color}">${category.name}</h3>
+                    </div>
+                    <div>
+                        <button class="edit" onclick="editCategory('${category.id}')">Edit</button>
+                        <button onclick="deleteCategory('${category.id}')">Delete</button>
+                    </div>
+                `;
+                categoryList.appendChild(categoryItem);
+            });
+
+            const items = categoryList.querySelectorAll('.category-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', e.target.dataset.id);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const dropTarget = e.target.closest('.category-item');
+            if (dropTarget && dropTarget.dataset.id !== draggedId) {
+                const draggedIndex = categories.findIndex(cat => cat.id === draggedId);
+                const dropIndex = categories.findIndex(cat => cat.id === dropTarget.dataset.id);
+                const [draggedCategory] = categories.splice(draggedIndex, 1);
+                categories.splice(dropIndex, 0, draggedCategory);
+                localStorage.setItem('categories', JSON.stringify(categories));
+                renderCategories();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function renderJobList() {
+            const jobList = document.getElementById('jobList');
+            jobList.innerHTML = '';
+            categories.forEach(category => {
+                if (jobs[category.id]) {
+                    jobs[category.id].forEach((job, index) => {
+                        const jobItem = document.createElement('div');
+                        jobItem.classList.add('job-item');
+                        jobItem.innerHTML = `
+                            <div>
+                                <img src="${job.thumbnail || 'default.jpg'}" alt="${job.title}">
+                                <h3>${job.title}</h3>
+                                <p>${category.name} | ${formatDate(job.timestamp)}</p>
+                            </div>
+                            <div>
+                                <button class="edit" onclick="editJob('${category.id}', ${index})">Edit</button>
+                                <button onclick="deleteJob('${category.id}', ${index})">Delete</button>
+                            </div>
+                        `;
+                        jobList.appendChild(jobItem);
+                    });
+                }
+            });
+        }
+
+        document.getElementById('categoryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newCategory = document.getElementById('newCategory').value.toLowerCase().replace(/\s+/g, '-');
+            const categoryColor = document.getElementById('categoryColor').value;
+            const editIndex = document.getElementById('newCategory').dataset.editIndex;
+            if (editIndex) {
+                const category = categories.find(cat => cat.id === editIndex);
+                category.name = document.getElementById('newCategory').value;
+                category.color = categoryColor;
+                const oldId = category.id;
+                category.id = newCategory;
+                if (jobs[oldId]) {
+                    jobs[newCategory] = jobs[oldId];
+                    delete jobs[oldId];
+                }
+            } else if (newCategory && !categories.some(cat => cat.id === newCategory)) {
+                categories.push({ id: newCategory, name: document.getElementById('newCategory').value, color: categoryColor });
+                jobs[newCategory] = [];
+            }
+            localStorage.setItem('categories', JSON.stringify(categories));
+            localStorage.setItem('jobs', JSON.stringify(jobs));
+            renderCategories();
+            renderJobList();
+            document.getElementById('categoryForm').reset();
+            document.getElementById('newCategory').dataset.editIndex = '';
+        });
+
+        function editCategory(id) {
+            const category = categories.find(cat => cat.id === id);
+            document.getElementById('newCategory').value = category.name;
+            document.getElementById('categoryColor').value = category.color;
+            document.getElementById('newCategory').dataset.editIndex = id;
+        }
+
+        function deleteCategory(id) {
+            if (id === 'recent-jobs') {
+                alert('Cannot delete Recent Jobs category');
+                return;
+            }
+            categories = categories.filter(cat => cat.id !== id);
+            if (jobs[id]) {
+                jobs[id].forEach(job => {
+                    jobs['recent-jobs'] = jobs['recent-jobs'].filter(rj => rj.id !== job.id);
+                });
+                delete jobs[id];
+            }
+            localStorage.setItem('categories', JSON.stringify(categories));
+            localStorage.setItem('jobs', JSON.stringify(jobs));
+            renderCategories();
+            renderJobList();
+        }
+
+        document.getElementById('jobForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const category = document.getElementById('category').value;
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const applyUrl = document.getElementById('applyUrl').value;
+            const applyText = document.getElementById('applyText').value || 'Apply Now';
+            const editIndex = document.getElementById('editIndex').value;
+            const editCategory = document.getElementById('editCategory').value;
+            const timestamp = editIndex !== '' && editCategory === category ? 
+                (jobs[category][editIndex]?.timestamp || Date.now()) : Date.now();
+            const postId = editIndex !== '' ? jobs[editCategory][editIndex].id : Date.now().toString();
+            const thumbnailInput = document.getElementById('thumbnail');
+
+            const saveJob = (thumbnail) => {
+                const job = { id: postId, title, content, thumbnail, applyUrl, applyText, timestamp, category };
+                if (!jobs[category]) {
+                    jobs[category] = [];
+                }
+                if (editIndex !== '') {
+                    const oldJob = jobs[editCategory][editIndex];
+                    jobs[editCategory].splice(editIndex, 1);
+                    if (editCategory !== 'recent-jobs') {
+                        jobs['recent-jobs'] = jobs['recent-jobs'].filter(rj => rj.id !== oldJob.id);
+                    }
+                }
+                jobs[category].push(job);
+                if (category !== 'recent-jobs') {
+                    if (!jobs['recent-jobs']) jobs['recent-jobs'] = [];
+                    jobs['recent-jobs'] = jobs['recent-jobs'].filter(rj => rj.id !== job.id);
+                    jobs['recent-jobs'].push(job);
+                    jobs['recent-jobs'].sort((a, b) => b.timestamp - a.timestamp);
+                }
+                localStorage.setItem('jobs', JSON.stringify(jobs));
+                renderJobList();
+                document.getElementById('jobForm').reset();
+                document.getElementById('editIndex').value = '';
+                document.getElementById('editCategory').value = '';
+                document.getElementById('thumbnail').dataset.current = '';
+            };
+
+            if (thumbnailInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveJob(e.target.result);
+                };
+                reader.readAsDataURL(thumbnailInput.files[0]);
+            } else {
+                saveJob(document.getElementById('thumbnail').dataset.current || '');
+            }
+        });
+
+        function editJob(category, index) {
+            const job = jobs[category][index];
+            document.getElementById('category').value = category;
+            document.getElementById('title').value = job.title;
+            document.getElementById('content').value = job.content;
+            document.getElementById('applyUrl').value = job.applyUrl || '';
+            document.getElementById('applyText').value = job.applyText || 'Apply Now';
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editCategory').value = category;
+            document.getElementById('thumbnail').dataset.current = job.thumbnail || '';
+        }
+
+        function deleteJob(category, index) {
+            const job = jobs[category][index];
+            jobs[category].splice(index, 1);
+            if (jobs[category].length === 0) {
+                delete jobs[category];
+            }
+            if (category !== 'recent-jobs') {
+                jobs['recent-jobs'] = jobs['recent-jobs'].filter(rj => rj.id !== job.id);
+            }
+            localStorage.setItem('jobs', JSON.stringify(jobs));
+            renderJobList();
+        }
+
+        renderCategories();
+        renderJobList();
+    </script>
+</body>
+</html>

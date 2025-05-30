@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Panel - JobsCare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+            color: #333;
+        }
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .header .app-name {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .menu-icon {
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .menu-icon:hover {
+            transform: rotate(90deg);
+        }
+        .search-container {
+            flex: 1;
+            margin: 0 20px;
+        }
+        .search-container input {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.9);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-container input:focus {
+            outline: none;
+            box-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            background: rgba(30,64,175,0.95);
+            position: fixed;
+            top: 0;
+            left: -280px;
+            transition: left 0.4s ease;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+            z-index: 900;
+            backdrop-filter: blur(10px);
+        }
+        .sidebar.active {
+            left: 0;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 20px;
+        }
+        .sidebar ul li {
+            margin: 25px 0;
+        }
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 10px;
+            display: block;
+            border-radius: 8px;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .sidebar ul li a:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(10px);
+        }
+        .main-content {
+            margin-top: 80px;
+            padding: 20px;
+        }
+        .job-section {
+            margin-bottom: 40px;
+        }
+        .job-section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        .job-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        .job-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.3);
+        }
+        .job-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .job-card h3 {
+            font-size: 20px;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        .job-card .date {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .job-card p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .view-all {
+            display: inline-block;
+            background: #1e40af;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .view-all:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        .modal-content h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #1e3a8a;
+        }
+        .modal-content .date {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .modal-content img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .modal-content p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        .apply-btn {
+            background: #1e40af;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .apply-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #333;
+            transition: color 0.3s ease;
+        }
+        .close-btn:hover {
+            color: #dc2626;
+        }
+        #search-results {
+            display: none;
+            margin: 80px 20px 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        #search-results h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="menu-icon" onclick="toggleSidebar()">☰</div>
+        <div class="app-name">Job Master</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search jobs...">
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <ul id="category-list"></ul>
+    </div>
+
+    <div class="main-content" id="main-content"></div>
+    <div id="search-results"></div>
+    <div class="modal" id="jobModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let jobs = JSON.parse(localStorage.getItem('jobs')) || {};
+        let categories = JSON.parse(localStorage.getItem('categories')) || [
+            { id: 'recent-jobs', name: 'Recent Jobs', color: '#1e3a8a' },
+            { id: 'pak-army', name: 'Pak Army', color: '#1e3a8a' },
+            { id: 'pak-fc', name: 'Pak FC', color: '#1e3a8a' },
+            { id: 'local-jobs', name: 'Local Jobs', color: '#1e3a8a' },
+            { id: 'govt-jobs', name: 'Government Jobs', color: '#1e3a8a' }
+        ];
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        }
+
+        function renderCategories() {
+            const categoryList = document.getElementById('category-list');
+            const mainContent = document.getElementById('main-content');
+            categoryList.innerHTML = '';
+            mainContent.innerHTML = '';
+            categories.forEach(category => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a onclick="scrollToSection('${category.id}')">${category.name}</a>`;
+                categoryList.appendChild(li);
+
+                const section = document.createElement('div');
+                section.classList.add('job-section');
+                section.id = category.id;
+                section.innerHTML = `<h2 style="color: ${category.color}">${category.name}</h2>`;
+                mainContent.appendChild(section);
+            });
+            renderJobs();
+        }
+
+        function renderJobs() {
+            const mainContent = document.getElementById('main-content');
+            mainContent.style.display = 'block';
+            document.getElementById('search-results').style.display = 'none';
+            categories.forEach(category => {
+                const container = document.getElementById(category.id);
+                container.innerHTML = `<h2 style="color: ${category.color}">${category.name}</h2>`;
+                if (jobs[category.id] && jobs[category.id].length > 0) {
+                    const posts = jobs[category.id].slice(0, 5);
+                    posts.forEach(job => {
+                        const jobCard = document.createElement('div');
+                        jobCard.classList.add('job-card');
+                        jobCard.innerHTML = `
+                            <img src="${job.thumbnail || 'default.jpg'}" alt="${job.title}">
+                            <div class="date">${formatDate(job.timestamp)}</div>
+                            <h3>${job.title}</h3>
+                            <p>${job.content.substring(0, 100)}...</p>
+                        `;
+                        jobCard.onclick = () => showJobDetails(job);
+                        container.appendChild(jobCard);
+                    });
+                    if (jobs[category.id].length > 5) {
+                        const viewAll = document.createElement('a');
+                        viewAll.classList.add('view-all');
+                        viewAll.textContent = 'View All Posts';
+                        viewAll.onclick = () => showAllPosts(category.id);
+                        container.appendChild(viewAll);
+                    }
+                } else {
+                    container.innerHTML += '<p>No jobs available.</p>';
+                }
+            });
+        }
+
+        function showAllPosts(categoryId) {
+            const container = document.getElementById(categoryId);
+            const category = categories.find(cat => cat.id === categoryId);
+            container.innerHTML = `<h2 style="color: ${category.color}">${category.name}</h2>`;
+            if (jobs[categoryId] && jobs[categoryId].length > 0) {
+                jobs[categoryId].forEach(job => {
+                    const jobCard = document.createElement('div');
+                    jobCard.classList.add('job-card');
+                    jobCard.innerHTML = `
+                        <img src="${job.thumbnail || 'default.jpg'}" alt="${job.title}">
+                        <div class="date">${formatDate(job.timestamp)}</div>
+                        <h3>${job.title}</h3>
+                        <p>${job.content.substring(0, 100)}...</p>
+                    `;
+                    jobCard.onclick = () => showJobDetails(job);
+                    container.appendChild(jobCard);
+                });
+            } else {
+                container.innerHTML += '<p>No jobs available.</p>';
+            }
+        }
+
+        function showJobDetails(job) {
+            const modal = document.getElementById('jobModal');
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <img src="${job.thumbnail || 'default.jpg'}" alt="${job.title}">
+                <div class="date">${formatDate(job.timestamp)}</div>
+                <h3>${job.title}</h3>
+                <p>${job.content}</p>
+                ${job.applyUrl ? `<button class="apply-btn" onclick="window.open('${job.applyUrl}', '_blank')">${job.applyText || 'Apply Now'}</button>` : ''}
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('jobModal').style.display = 'none';
+        }
+
+        function searchJobs(query) {
+            const searchResults = document.getElementById('search-results');
+            const mainContent = document.getElementById('main-content');
+            if (!query.trim()) {
+                mainContent.style.display = 'block';
+                searchResults.style.display = 'none';
+                return;
+            }
+            mainContent.style.display = 'none';
+            searchResults.style.display = 'block';
+            searchResults.innerHTML = '<h2>Search Results</h2>';
+            let found = false;
+            categories.forEach(category => {
+                if (jobs[category.id]) {
+                    jobs[category.id].forEach(job => {
+                        if (job.title.toLowerCase().includes(query.toLowerCase())) {
+                            found = true;
+                            const jobCard = document.createElement('div');
+                            jobCard.classList.add('job-card');
+                            jobCard.innerHTML = `
+                                <img src="${job.thumbnail || 'default.jpg'}" alt="${job.title}">
+                                <div class="date">${formatDate(job.timestamp)}</div>
+                                <h3>${job.title}</h3>
+                                <p>${job.content.substring(0, 100)}...</p>
+                            `;
+                            jobCard.onclick = () => showJobDetails(job);
+                            searchResults.appendChild(jobCard);
+                        }
+                    });
+                }
+            });
+            if (!found) {
+                searchResults.innerHTML += '<p>No jobs found.</p>';
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchJobs(e.target.value);
+        });
+
+        renderCategories();
+    </script>
+</body>
+</html>
